@@ -8,6 +8,15 @@ spring:
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.yaml
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,liquibase
+  endpoint:
+    health:
+      show-details: when-authorized
+
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
