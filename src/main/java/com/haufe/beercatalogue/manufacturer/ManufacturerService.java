@@ -1,6 +1,6 @@
 package com.haufe.beercatalogue.manufacturer;
 
-import com.haufe.beercatalogue.exception.NotFoundException;
+import com.haufe.beercatalogue.common.exception.NotFoundException;
 import com.haufe.beercatalogue.manufacturer.dto.ManufacturerRequest;
 import com.haufe.beercatalogue.manufacturer.dto.ManufacturerResponse;
 import java.util.List;

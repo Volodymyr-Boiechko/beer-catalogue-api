@@ -1,4 +1,4 @@
-package com.haufe.beercatalogue.config;
+package com.haufe.beercatalogue.common.config;
 
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;

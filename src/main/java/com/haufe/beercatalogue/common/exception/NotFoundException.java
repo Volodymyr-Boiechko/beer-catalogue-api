@@ -1,4 +1,4 @@
-package com.haufe.beercatalogue.exception;
+package com.haufe.beercatalogue.common.exception;
 
 public class NotFoundException extends RuntimeException {
 
