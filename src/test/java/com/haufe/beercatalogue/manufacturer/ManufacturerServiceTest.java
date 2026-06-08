@@ -7,6 +7,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.haufe.beercatalogue.common.dto.PageResponse;
 import com.haufe.beercatalogue.common.exception.NotFoundException;
 import com.haufe.beercatalogue.manufacturer.dto.ManufacturerRequest;
 import com.haufe.beercatalogue.manufacturer.dto.ManufacturerResponse;
@@ -18,6 +19,11 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 
 @ExtendWith(MockitoExtension.class)
 class ManufacturerServiceTest {
@@ -61,15 +67,23 @@ class ManufacturerServiceTest {
     }
 
     @Test
-    void findAll_returnsMappedList() {
+    void search_returnsMappedPage() {
         Manufacturer m1 = ManufacturerTestFactory.manufacturer(1L, "Budweiser", "USA");
         Manufacturer m2 = ManufacturerTestFactory.manufacturer(2L, "Heineken", "Netherlands");
-        when(repository.findAll()).thenReturn(List.of(m1, m2));
+        Pageable pageable = PageRequest.of(0, 20);
+        Page<Manufacturer> page = new PageImpl<>(List.of(m1, m2), pageable, 2);
+        when(repository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
 
-        assertThat(service.findAll()).containsExactly(
+        PageResponse<ManufacturerResponse> response = service.search(
+            new ManufacturerSearchCriteria(null, null), pageable);
+
+        assertThat(response.content()).containsExactly(
             new ManufacturerResponse(1L, "Budweiser", "USA"),
             new ManufacturerResponse(2L, "Heineken", "Netherlands")
         );
+        assertThat(response.totalElements()).isEqualTo(2);
+        assertThat(response.page()).isEqualTo(0);
+        assertThat(response.size()).isEqualTo(20);
     }
 
     @Test

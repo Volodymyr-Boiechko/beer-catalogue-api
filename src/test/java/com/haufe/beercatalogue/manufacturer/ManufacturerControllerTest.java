@@ -41,11 +41,87 @@ class ManufacturerControllerTest {
     }
 
     @Test
-    void list_emptyDatabase_returns200AndEmptyArray() throws Exception {
+    void list_emptyDatabase_returns200AndEmptyPage() throws Exception {
         mockMvc.perform(get("/api/manufacturers"))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$").isArray())
-            .andExpect(jsonPath("$").isEmpty());
+            .andExpect(jsonPath("$.content").isArray())
+            .andExpect(jsonPath("$.content").isEmpty())
+            .andExpect(jsonPath("$.totalElements").value(0))
+            .andExpect(jsonPath("$.page").value(0));
+    }
+
+    @Test
+    void list_manyManufacturers_paginatesAndSorts() throws Exception {
+        repository.save(new Manufacturer("Zywiec", "Poland"));
+        repository.save(new Manufacturer("Asahi", "Japan"));
+        repository.save(new Manufacturer("Carlsberg", "Denmark"));
+        repository.save(new Manufacturer("Budweiser", "USA"));
+        repository.save(new Manufacturer("Heineken", "Netherlands"));
+
+        mockMvc.perform(get("/api/manufacturers?page=0&size=2"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.content.length()").value(2))
+            .andExpect(jsonPath("$.content[0].name").value("Asahi"))
+            .andExpect(jsonPath("$.content[1].name").value("Budweiser"))
+            .andExpect(jsonPath("$.totalElements").value(5))
+            .andExpect(jsonPath("$.totalPages").value(3))
+            .andExpect(jsonPath("$.page").value(0))
+            .andExpect(jsonPath("$.first").value(true))
+            .andExpect(jsonPath("$.last").value(false));
+
+        mockMvc.perform(get("/api/manufacturers?page=2&size=2"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.content.length()").value(1))
+            .andExpect(jsonPath("$.content[0].name").value("Zywiec"))
+            .andExpect(jsonPath("$.first").value(false))
+            .andExpect(jsonPath("$.last").value(true));
+    }
+
+    @Test
+    void search_byName_caseInsensitive_returnsMatchingManufacturers() throws Exception {
+        repository.save(new Manufacturer("Heineken", "Netherlands"));
+        repository.save(new Manufacturer("Guinness", "Ireland"));
+        repository.save(new Manufacturer("Asahi", "Japan"));
+
+        mockMvc.perform(get("/api/manufacturers").param("name", "eken"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.totalElements").value(1))
+            .andExpect(jsonPath("$.content[0].name").value("Heineken"));
+    }
+
+    @Test
+    void search_byCountry_caseInsensitive_returnsMatchingManufacturers() throws Exception {
+        repository.save(new Manufacturer("Heineken", "Netherlands"));
+        repository.save(new Manufacturer("Guinness", "Ireland"));
+        repository.save(new Manufacturer("Asahi", "Japan"));
+
+        mockMvc.perform(get("/api/manufacturers").param("country", "ire"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.totalElements").value(1))
+            .andExpect(jsonPath("$.content[0].name").value("Guinness"));
+    }
+
+    @Test
+    void search_combinedNameAndCountry_appliesAndSemantics() throws Exception {
+        repository.save(new Manufacturer("Heineken", "Netherlands"));
+        repository.save(new Manufacturer("Guinness", "Ireland"));
+        repository.save(new Manufacturer("Asahi", "Japan"));
+
+        mockMvc.perform(get("/api/manufacturers").param("name", "e").param("country", "ire"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.totalElements").value(1))
+            .andExpect(jsonPath("$.content[0].name").value("Guinness"));
+    }
+
+    @Test
+    void search_noFilters_returnsAllManufacturers() throws Exception {
+        repository.save(new Manufacturer("Heineken", "Netherlands"));
+        repository.save(new Manufacturer("Guinness", "Ireland"));
+        repository.save(new Manufacturer("Asahi", "Japan"));
+
+        mockMvc.perform(get("/api/manufacturers"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.totalElements").value(3));
     }
 
     @Test
