@@ -55,11 +55,13 @@ class BeerControllerTest {
     }
 
     @Test
-    void list_emptyDatabase_returns200AndEmptyArray() throws Exception {
+    void list_emptyDatabase_returns200AndEmptyPage() throws Exception {
         mockMvc.perform(get("/api/beers"))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$").isArray())
-            .andExpect(jsonPath("$").isEmpty());
+            .andExpect(jsonPath("$.content").isArray())
+            .andExpect(jsonPath("$.content").isEmpty())
+            .andExpect(jsonPath("$.totalElements").value(0))
+            .andExpect(jsonPath("$.page").value(0));
     }
 
     @Test

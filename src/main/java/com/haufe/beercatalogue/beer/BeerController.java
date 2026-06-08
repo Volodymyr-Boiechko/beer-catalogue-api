@@ -2,9 +2,12 @@ package com.haufe.beercatalogue.beer;
 
 import com.haufe.beercatalogue.beer.dto.BeerRequest;
 import com.haufe.beercatalogue.beer.dto.BeerResponse;
+import com.haufe.beercatalogue.common.dto.PageResponse;
 import jakarta.validation.Valid;
 import java.net.URI;
-import java.util.List;
+import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -29,8 +32,11 @@ public class BeerController {
     }
 
     @GetMapping
-    public List<BeerResponse> list() {
-        return service.findAll();
+    public PageResponse<BeerResponse> list(
+        @ParameterObject BeerSearchCriteria criteria,
+        @ParameterObject @PageableDefault(size = 20, sort = "name") Pageable pageable
+    ) {
+        return service.search(criteria, pageable);
     }
 
     @GetMapping("/{id}")

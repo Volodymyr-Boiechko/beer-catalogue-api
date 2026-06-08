@@ -2,10 +2,11 @@ package com.haufe.beercatalogue.beer;
 
 import com.haufe.beercatalogue.beer.dto.BeerRequest;
 import com.haufe.beercatalogue.beer.dto.BeerResponse;
+import com.haufe.beercatalogue.common.dto.PageResponse;
 import com.haufe.beercatalogue.common.exception.NotFoundException;
 import com.haufe.beercatalogue.manufacturer.Manufacturer;
 import com.haufe.beercatalogue.manufacturer.ManufacturerRepository;
-import java.util.List;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,8 +34,10 @@ public class BeerService {
     }
 
     @Transactional(readOnly = true)
-    public List<BeerResponse> findAll() {
-        return BeerResponse.from(beerRepository.findAll());
+    public PageResponse<BeerResponse> search(BeerSearchCriteria criteria, Pageable pageable) {
+        var all = beerRepository.findAll(BeerSpecification.from(criteria), pageable)
+            .map(BeerResponse::from);
+        return PageResponse.from(all);
     }
 
     public BeerResponse update(Long id, BeerRequest request) {

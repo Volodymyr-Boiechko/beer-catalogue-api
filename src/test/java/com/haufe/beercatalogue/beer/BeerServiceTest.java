@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 
 import com.haufe.beercatalogue.beer.dto.BeerRequest;
 import com.haufe.beercatalogue.beer.dto.BeerResponse;
+import com.haufe.beercatalogue.common.dto.PageResponse;
 import com.haufe.beercatalogue.common.exception.NotFoundException;
 import com.haufe.beercatalogue.manufacturer.Manufacturer;
 import com.haufe.beercatalogue.manufacturer.ManufacturerRepository;
@@ -22,6 +23,11 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 
 @ExtendWith(MockitoExtension.class)
 class BeerServiceTest {
@@ -34,8 +40,6 @@ class BeerServiceTest {
 
     @InjectMocks
     BeerService service;
-
-    // ── create ────────────────────────────────────────────────────────────────
 
     @Test
     void create_existingManufacturer_savesWithLinkedManufacturerAndReturnsResponse() {
@@ -68,13 +72,11 @@ class BeerServiceTest {
         when(manufacturerRepository.findById(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() ->
-                service.create(new BeerRequest("Beer", BigDecimal.ONE, BeerType.ALE, null, 99L)))
-                .isInstanceOf(NotFoundException.class)
-                .hasMessageContaining("99");
+            service.create(new BeerRequest("Beer", BigDecimal.ONE, BeerType.ALE, null, 99L)))
+            .isInstanceOf(NotFoundException.class)
+            .hasMessageContaining("99");
         verify(beerRepository, never()).save(any());
     }
-
-    // ── getById ───────────────────────────────────────────────────────────────
 
     @Test
     void getById_existingId_returnsResponse() {
@@ -94,28 +96,31 @@ class BeerServiceTest {
         when(beerRepository.findById(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.getById(99L))
-                .isInstanceOf(NotFoundException.class)
-                .hasMessageContaining("99");
+            .isInstanceOf(NotFoundException.class)
+            .hasMessageContaining("99");
     }
 
-    // ── findAll ───────────────────────────────────────────────────────────────
-
     @Test
-    void findAll_returnsMappedList() {
+    void search_noFilters_returnsMappedPage() {
         Manufacturer m = ManufacturerTestFactory.manufacturer(1L, "Heineken", "Netherlands");
         Beer b1 = BeerTestFactory.beer(1L, "Lager", new BigDecimal("5.0"), BeerType.LAGER, null, m);
         Beer b2 = BeerTestFactory.beer(2L, "IPA", new BigDecimal("6.5"), BeerType.IPA, "Hoppy", m);
-        when(beerRepository.findAll()).thenReturn(List.of(b1, b2));
+        Pageable pageable = PageRequest.of(0, 20);
+        Page<Beer> page = new PageImpl<>(List.of(b1, b2), pageable, 2);
+        when(beerRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
 
-        List<BeerResponse> responses = service.findAll();
+        PageResponse<BeerResponse> response = service.search(
+            new BeerSearchCriteria(null, null, null, null, null, null), pageable);
 
-        assertThat(responses).hasSize(2);
-        assertThat(responses.get(0).name()).isEqualTo("Lager");
-        assertThat(responses.get(1).name()).isEqualTo("IPA");
-        assertThat(responses.get(1).description()).isEqualTo("Hoppy");
+        assertThat(response.content()).hasSize(2);
+        assertThat(response.content().get(0).name()).isEqualTo("Lager");
+        assertThat(response.content().get(1).name()).isEqualTo("IPA");
+        assertThat(response.totalElements()).isEqualTo(2);
+        assertThat(response.page()).isEqualTo(0);
+        assertThat(response.size()).isEqualTo(20);
+        assertThat(response.first()).isTrue();
+        assertThat(response.last()).isTrue();
     }
-
-    // ── update ────────────────────────────────────────────────────────────────
 
     @Test
     void update_existingBeerAndManufacturer_appliesAllChanges() {
@@ -128,7 +133,7 @@ class BeerServiceTest {
         when(beerRepository.save(existing)).thenReturn(existing);
 
         BeerResponse response = service.update(7L,
-                new BeerRequest("New Beer", new BigDecimal("5.5"), BeerType.IPA, "Updated", 2L));
+            new BeerRequest("New Beer", new BigDecimal("5.5"), BeerType.IPA, "Updated", 2L));
 
         assertThat(existing.getName()).isEqualTo("New Beer");
         assertThat(existing.getAbv()).isEqualByComparingTo("5.5");
@@ -143,8 +148,8 @@ class BeerServiceTest {
         when(beerRepository.findById(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() ->
-                service.update(99L, new BeerRequest("Beer", BigDecimal.ONE, BeerType.ALE, null, 1L)))
-                .isInstanceOf(NotFoundException.class);
+            service.update(99L, new BeerRequest("Beer", BigDecimal.ONE, BeerType.ALE, null, 1L)))
+            .isInstanceOf(NotFoundException.class);
         verify(beerRepository, never()).save(any());
     }
 
@@ -156,13 +161,11 @@ class BeerServiceTest {
         when(manufacturerRepository.findById(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() ->
-                service.update(7L, new BeerRequest("Beer", BigDecimal.ONE, BeerType.ALE, null, 99L)))
-                .isInstanceOf(NotFoundException.class)
-                .hasMessageContaining("99");
+            service.update(7L, new BeerRequest("Beer", BigDecimal.ONE, BeerType.ALE, null, 99L)))
+            .isInstanceOf(NotFoundException.class)
+            .hasMessageContaining("99");
         verify(beerRepository, never()).save(any());
     }
-
-    // ── delete ────────────────────────────────────────────────────────────────
 
     @Test
     void delete_existingId_callsDeleteById() {
@@ -178,7 +181,7 @@ class BeerServiceTest {
         when(beerRepository.existsById(99L)).thenReturn(false);
 
         assertThatThrownBy(() -> service.delete(99L))
-                .isInstanceOf(NotFoundException.class);
+            .isInstanceOf(NotFoundException.class);
         verify(beerRepository, never()).deleteById(any());
     }
 }
