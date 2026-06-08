@@ -1,4 +1,4 @@
-package com.haufe.beercatalogue.config;
+package com.haufe.beercatalogue.common.seed;
 
 import com.haufe.beercatalogue.manufacturer.Manufacturer;
 import com.haufe.beercatalogue.manufacturer.ManufacturerRepository;
