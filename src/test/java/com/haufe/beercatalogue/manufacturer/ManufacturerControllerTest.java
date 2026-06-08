@@ -1,6 +1,7 @@
 package com.haufe.beercatalogue.manufacturer;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -10,7 +11,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.haufe.beercatalogue.beer.BeerRepository;
 import com.haufe.beercatalogue.manufacturer.dto.ManufacturerRequest;
+import com.haufe.beercatalogue.security.AppUser;
+import com.haufe.beercatalogue.security.AppUserRepository;
+import com.haufe.beercatalogue.security.UserRole;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,25 +24,40 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 @SpringBootTest
 @AutoConfigureMockMvc
 @AutoConfigureTestDatabase(replace = Replace.NONE)
+@ActiveProfiles("test")
 class ManufacturerControllerTest {
 
     @Autowired
     MockMvc mockMvc;
 
     @Autowired
+    BeerRepository beerRepository;
+
+    @Autowired
     ManufacturerRepository repository;
+
+    @Autowired
+    AppUserRepository appUserRepository;
+
+    @Autowired
+    PasswordEncoder passwordEncoder;
 
     @Autowired
     ObjectMapper objectMapper;
 
     @BeforeEach
     void setUp() {
+        beerRepository.deleteAll();
+        appUserRepository.deleteAll();
         repository.deleteAll();
+        appUserRepository.save(new AppUser("admin", passwordEncoder.encode("pass"), UserRole.ADMIN, null));
     }
 
     @Test
@@ -127,6 +147,7 @@ class ManufacturerControllerTest {
     @Test
     void create_validRequest_returns201WithLocationAndBody() throws Exception {
         String location = mockMvc.perform(post("/api/manufacturers")
+                .with(httpBasic("admin", "pass"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(new ManufacturerRequest("Heineken", "Netherlands"))))
             .andExpect(status().isCreated())
@@ -161,6 +182,7 @@ class ManufacturerControllerTest {
         Manufacturer saved = repository.save(new Manufacturer("Old Name", "Old Country"));
 
         mockMvc.perform(put("/api/manufacturers/{id}", saved.getId())
+                .with(httpBasic("admin", "pass"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(new ManufacturerRequest("New Name", "New Country"))))
             .andExpect(status().isOk())
@@ -171,6 +193,7 @@ class ManufacturerControllerTest {
     @Test
     void update_nonExistentId_returns404() throws Exception {
         mockMvc.perform(put("/api/manufacturers/{id}", 999L)
+                .with(httpBasic("admin", "pass"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(new ManufacturerRequest("Name", "Country"))))
             .andExpect(status().isNotFound());
@@ -180,19 +203,22 @@ class ManufacturerControllerTest {
     void delete_existingManufacturer_returns204() throws Exception {
         Manufacturer saved = repository.save(new Manufacturer("Carlsberg", "Denmark"));
 
-        mockMvc.perform(delete("/api/manufacturers/{id}", saved.getId()))
+        mockMvc.perform(delete("/api/manufacturers/{id}", saved.getId())
+                .with(httpBasic("admin", "pass")))
             .andExpect(status().isNoContent());
     }
 
     @Test
     void delete_nonExistentId_returns404() throws Exception {
-        mockMvc.perform(delete("/api/manufacturers/{id}", 999L))
+        mockMvc.perform(delete("/api/manufacturers/{id}", 999L)
+                .with(httpBasic("admin", "pass")))
             .andExpect(status().isNotFound());
     }
 
     @Test
     void create_blankName_returns400WithFieldError() throws Exception {
         mockMvc.perform(post("/api/manufacturers")
+                .with(httpBasic("admin", "pass"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(new ManufacturerRequest("", "Netherlands"))))
             .andExpect(status().isBadRequest())

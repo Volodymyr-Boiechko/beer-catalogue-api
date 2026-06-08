@@ -4,7 +4,9 @@ import com.haufe.beercatalogue.common.dto.PageResponse;
 import com.haufe.beercatalogue.common.exception.NotFoundException;
 import com.haufe.beercatalogue.manufacturer.dto.ManufacturerRequest;
 import com.haufe.beercatalogue.manufacturer.dto.ManufacturerResponse;
+import com.haufe.beercatalogue.security.OwnershipChecker;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,9 +15,11 @@ import org.springframework.transaction.annotation.Transactional;
 public class ManufacturerService {
 
     private final ManufacturerRepository repository;
+    private final OwnershipChecker ownershipChecker;
 
-    public ManufacturerService(ManufacturerRepository repository) {
+    public ManufacturerService(ManufacturerRepository repository, OwnershipChecker ownershipChecker) {
         this.repository = repository;
+        this.ownershipChecker = ownershipChecker;
     }
 
     public ManufacturerResponse create(ManufacturerRequest request) {
@@ -38,6 +42,9 @@ public class ManufacturerService {
 
     public ManufacturerResponse update(Long id, ManufacturerRequest request) {
         var found = findById(id);
+        if (!ownershipChecker.canEditManufacturer(id)) {
+            throw new AccessDeniedException("Not authorized to update this manufacturer");
+        }
         request.applyTo(found);
         var saved = repository.save(found);
         return ManufacturerResponse.from(saved);

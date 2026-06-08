@@ -6,6 +6,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.haufe.beercatalogue.manufacturer.Manufacturer;
 import com.haufe.beercatalogue.manufacturer.ManufacturerRepository;
+import com.haufe.beercatalogue.security.AppUserRepository;
 import java.math.BigDecimal;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -14,11 +15,13 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase.Replace;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 @SpringBootTest
 @AutoConfigureMockMvc
 @AutoConfigureTestDatabase(replace = Replace.NONE)
+@ActiveProfiles("test")
 class BeerSearchTest {
 
     @Autowired
@@ -30,9 +33,13 @@ class BeerSearchTest {
     @Autowired
     ManufacturerRepository manufacturerRepository;
 
+    @Autowired
+    AppUserRepository appUserRepository;
+
     @BeforeEach
     void setUp() {
         beerRepository.deleteAll();
+        appUserRepository.deleteAll();
         manufacturerRepository.deleteAll();
 
         Manufacturer m1 = manufacturerRepository.save(new Manufacturer("Heineken", "Netherlands"));

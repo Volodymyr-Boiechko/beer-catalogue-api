@@ -1,6 +1,7 @@
 package com.haufe.beercatalogue.beer;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -13,6 +14,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.haufe.beercatalogue.beer.dto.BeerRequest;
 import com.haufe.beercatalogue.manufacturer.Manufacturer;
 import com.haufe.beercatalogue.manufacturer.ManufacturerRepository;
+import com.haufe.beercatalogue.security.AppUser;
+import com.haufe.beercatalogue.security.AppUserRepository;
+import com.haufe.beercatalogue.security.UserRole;
 import java.math.BigDecimal;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,11 +30,14 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 @SpringBootTest
 @AutoConfigureMockMvc
 @AutoConfigureTestDatabase(replace = Replace.NONE)
+@ActiveProfiles("test")
 class BeerControllerTest {
 
     @Autowired
@@ -43,6 +50,12 @@ class BeerControllerTest {
     ManufacturerRepository manufacturerRepository;
 
     @Autowired
+    AppUserRepository appUserRepository;
+
+    @Autowired
+    PasswordEncoder passwordEncoder;
+
+    @Autowired
     ObjectMapper objectMapper;
 
     Manufacturer manufacturer;
@@ -50,8 +63,10 @@ class BeerControllerTest {
     @BeforeEach
     void setUp() {
         beerRepository.deleteAll();
+        appUserRepository.deleteAll();
         manufacturerRepository.deleteAll();
         manufacturer = manufacturerRepository.save(new Manufacturer("Heineken", "Netherlands"));
+        appUserRepository.save(new AppUser("admin", passwordEncoder.encode("pass"), UserRole.ADMIN, null));
     }
 
     @Test
@@ -70,6 +85,7 @@ class BeerControllerTest {
             BeerType.LAGER, "Refreshing", manufacturer.getId());
 
         String location = mockMvc.perform(post("/api/beers")
+                .with(httpBasic("admin", "pass"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isCreated())
@@ -89,6 +105,7 @@ class BeerControllerTest {
     @MethodSource("invalidBeerRequests")
     void create_invalidRequest_returns400(BeerRequest request, String expectedField) throws Exception {
         mockMvc.perform(post("/api/beers")
+                .with(httpBasic("admin", "pass"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isBadRequest())
@@ -132,6 +149,7 @@ class BeerControllerTest {
             BeerType.IPA, "Updated", manufacturer.getId());
 
         mockMvc.perform(put("/api/beers/{id}", saved.getId())
+                .with(httpBasic("admin", "pass"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isOk())
@@ -146,6 +164,7 @@ class BeerControllerTest {
             BeerType.LAGER, null, manufacturer.getId());
 
         mockMvc.perform(put("/api/beers/{id}", 999L)
+                .with(httpBasic("admin", "pass"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isNotFound());
@@ -156,13 +175,15 @@ class BeerControllerTest {
         Beer saved = beerRepository.save(
             new Beer("Pilsner", new BigDecimal("5.0"), BeerType.PILSNER, null, manufacturer));
 
-        mockMvc.perform(delete("/api/beers/{id}", saved.getId()))
+        mockMvc.perform(delete("/api/beers/{id}", saved.getId())
+                .with(httpBasic("admin", "pass")))
             .andExpect(status().isNoContent());
     }
 
     @Test
     void delete_nonExistentId_returns404() throws Exception {
-        mockMvc.perform(delete("/api/beers/{id}", 999L))
+        mockMvc.perform(delete("/api/beers/{id}", 999L)
+                .with(httpBasic("admin", "pass")))
             .andExpect(status().isNotFound());
     }
 }

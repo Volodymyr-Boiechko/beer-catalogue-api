@@ -3,6 +3,7 @@ package com.haufe.beercatalogue.manufacturer;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -11,8 +12,10 @@ import com.haufe.beercatalogue.common.dto.PageResponse;
 import com.haufe.beercatalogue.common.exception.NotFoundException;
 import com.haufe.beercatalogue.manufacturer.dto.ManufacturerRequest;
 import com.haufe.beercatalogue.manufacturer.dto.ManufacturerResponse;
+import com.haufe.beercatalogue.security.OwnershipChecker;
 import java.util.List;
 import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -31,8 +34,17 @@ class ManufacturerServiceTest {
     @Mock
     ManufacturerRepository repository;
 
+    @Mock
+    OwnershipChecker ownershipChecker;
+
     @InjectMocks
     ManufacturerService service;
+
+    @BeforeEach
+    void setUpMocks() {
+        lenient().when(ownershipChecker.canEditManufacturer(any())).thenReturn(true);
+        lenient().when(ownershipChecker.isAdmin()).thenReturn(true);
+    }
 
     @Test
     void create_savesEntityWithCorrectFieldsAndReturnsResponse() {

@@ -3,6 +3,7 @@ package com.haufe.beercatalogue.beer;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -14,9 +15,11 @@ import com.haufe.beercatalogue.common.exception.NotFoundException;
 import com.haufe.beercatalogue.manufacturer.Manufacturer;
 import com.haufe.beercatalogue.manufacturer.ManufacturerRepository;
 import com.haufe.beercatalogue.manufacturer.ManufacturerTestFactory;
+import com.haufe.beercatalogue.security.OwnershipChecker;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -38,8 +41,17 @@ class BeerServiceTest {
     @Mock
     ManufacturerRepository manufacturerRepository;
 
+    @Mock
+    OwnershipChecker ownershipChecker;
+
     @InjectMocks
     BeerService service;
+
+    @BeforeEach
+    void setUpMocks() {
+        lenient().when(ownershipChecker.canEditManufacturer(any())).thenReturn(true);
+        lenient().when(ownershipChecker.isAdmin()).thenReturn(true);
+    }
 
     @Test
     void create_existingManufacturer_savesWithLinkedManufacturerAndReturnsResponse() {
@@ -169,7 +181,9 @@ class BeerServiceTest {
 
     @Test
     void delete_existingId_callsDeleteById() {
-        when(beerRepository.existsById(8L)).thenReturn(true);
+        Manufacturer m = ManufacturerTestFactory.manufacturer(1L, "Heineken", "Netherlands");
+        Beer beer = BeerTestFactory.beer(8L, "Beer", BigDecimal.ONE, BeerType.ALE, null, m);
+        when(beerRepository.findById(8L)).thenReturn(Optional.of(beer));
 
         service.delete(8L);
 
@@ -178,7 +192,7 @@ class BeerServiceTest {
 
     @Test
     void delete_notFound_throwsNotFoundExceptionAndNeverCallsDeleteById() {
-        when(beerRepository.existsById(99L)).thenReturn(false);
+        when(beerRepository.findById(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.delete(99L))
             .isInstanceOf(NotFoundException.class);
