@@ -12,6 +12,7 @@ import com.haufe.beercatalogue.beer.dto.BeerResponse;
 import com.haufe.beercatalogue.common.exception.NotFoundException;
 import com.haufe.beercatalogue.manufacturer.Manufacturer;
 import com.haufe.beercatalogue.manufacturer.ManufacturerRepository;
+import com.haufe.beercatalogue.manufacturer.ManufacturerTestFactory;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
@@ -21,7 +22,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 class BeerServiceTest {
@@ -35,10 +35,12 @@ class BeerServiceTest {
     @InjectMocks
     BeerService service;
 
+    // ── create ────────────────────────────────────────────────────────────────
+
     @Test
     void create_existingManufacturer_savesWithLinkedManufacturerAndReturnsResponse() {
-        Manufacturer m = manufacturer(1L, "Heineken", "Netherlands");
-        Beer saved = beer(10L, "Corona", new BigDecimal("4.50"), BeerType.LAGER, "Refreshing", m);
+        Manufacturer m = ManufacturerTestFactory.manufacturer(1L, "Heineken", "Netherlands");
+        Beer saved = BeerTestFactory.beer(10L, "Corona", new BigDecimal("4.50"), BeerType.LAGER, "Refreshing", m);
 
         when(manufacturerRepository.findById(1L)).thenReturn(Optional.of(m));
         when(beerRepository.save(any(Beer.class))).thenReturn(saved);
@@ -72,10 +74,12 @@ class BeerServiceTest {
         verify(beerRepository, never()).save(any());
     }
 
+    // ── getById ───────────────────────────────────────────────────────────────
+
     @Test
     void getById_existingId_returnsResponse() {
-        Manufacturer m = manufacturer(1L, "Guinness Co", "Ireland");
-        Beer b = beer(5L, "Stout", new BigDecimal("4.20"), BeerType.STOUT, null, m);
+        Manufacturer m = ManufacturerTestFactory.manufacturer(1L, "Guinness Co", "Ireland");
+        Beer b = BeerTestFactory.beer(5L, "Stout", new BigDecimal("4.20"), BeerType.STOUT, null, m);
         when(beerRepository.findById(5L)).thenReturn(Optional.of(b));
 
         BeerResponse response = service.getById(5L);
@@ -94,11 +98,13 @@ class BeerServiceTest {
                 .hasMessageContaining("99");
     }
 
+    // ── findAll ───────────────────────────────────────────────────────────────
+
     @Test
     void findAll_returnsMappedList() {
-        Manufacturer m = manufacturer(1L, "Heineken", "Netherlands");
-        Beer b1 = beer(1L, "Lager", new BigDecimal("5.0"), BeerType.LAGER, null, m);
-        Beer b2 = beer(2L, "IPA", new BigDecimal("6.5"), BeerType.IPA, "Hoppy", m);
+        Manufacturer m = ManufacturerTestFactory.manufacturer(1L, "Heineken", "Netherlands");
+        Beer b1 = BeerTestFactory.beer(1L, "Lager", new BigDecimal("5.0"), BeerType.LAGER, null, m);
+        Beer b2 = BeerTestFactory.beer(2L, "IPA", new BigDecimal("6.5"), BeerType.IPA, "Hoppy", m);
         when(beerRepository.findAll()).thenReturn(List.of(b1, b2));
 
         List<BeerResponse> responses = service.findAll();
@@ -109,11 +115,13 @@ class BeerServiceTest {
         assertThat(responses.get(1).description()).isEqualTo("Hoppy");
     }
 
+    // ── update ────────────────────────────────────────────────────────────────
+
     @Test
     void update_existingBeerAndManufacturer_appliesAllChanges() {
-        Manufacturer oldM = manufacturer(1L, "Old Brew", "Germany");
-        Manufacturer newM = manufacturer(2L, "New Brew", "Belgium");
-        Beer existing = beer(7L, "Old Beer", new BigDecimal("4.0"), BeerType.ALE, null, oldM);
+        Manufacturer oldM = ManufacturerTestFactory.manufacturer(1L, "Old Brew", "Germany");
+        Manufacturer newM = ManufacturerTestFactory.manufacturer(2L, "New Brew", "Belgium");
+        Beer existing = BeerTestFactory.beer(7L, "Old Beer", new BigDecimal("4.0"), BeerType.ALE, null, oldM);
 
         when(beerRepository.findById(7L)).thenReturn(Optional.of(existing));
         when(manufacturerRepository.findById(2L)).thenReturn(Optional.of(newM));
@@ -142,8 +150,8 @@ class BeerServiceTest {
 
     @Test
     void update_manufacturerNotFound_throwsNotFoundExceptionAndNeverSaves() {
-        Manufacturer m = manufacturer(1L, "Heineken", "Netherlands");
-        Beer existing = beer(7L, "Beer", BigDecimal.ONE, BeerType.ALE, null, m);
+        Manufacturer m = ManufacturerTestFactory.manufacturer(1L, "Heineken", "Netherlands");
+        Beer existing = BeerTestFactory.beer(7L, "Beer", BigDecimal.ONE, BeerType.ALE, null, m);
         when(beerRepository.findById(7L)).thenReturn(Optional.of(existing));
         when(manufacturerRepository.findById(99L)).thenReturn(Optional.empty());
 
@@ -153,6 +161,8 @@ class BeerServiceTest {
                 .hasMessageContaining("99");
         verify(beerRepository, never()).save(any());
     }
+
+    // ── delete ────────────────────────────────────────────────────────────────
 
     @Test
     void delete_existingId_callsDeleteById() {
@@ -170,18 +180,5 @@ class BeerServiceTest {
         assertThatThrownBy(() -> service.delete(99L))
                 .isInstanceOf(NotFoundException.class);
         verify(beerRepository, never()).deleteById(any());
-    }
-
-    private static Manufacturer manufacturer(Long id, String name, String country) {
-        var m = new Manufacturer(name, country);
-        ReflectionTestUtils.setField(m, "id", id);
-        return m;
-    }
-
-    private static Beer beer(Long id, String name, BigDecimal abv, BeerType type,
-                             String description, Manufacturer manufacturer) {
-        var b = new Beer(name, abv, type, description, manufacturer);
-        ReflectionTestUtils.setField(b, "id", id);
-        return b;
     }
 }

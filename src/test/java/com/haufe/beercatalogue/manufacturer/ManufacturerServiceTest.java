@@ -18,7 +18,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 class ManufacturerServiceTest {
@@ -31,7 +30,7 @@ class ManufacturerServiceTest {
 
     @Test
     void create_savesEntityWithCorrectFieldsAndReturnsResponse() {
-        Manufacturer saved = withId(1L, "Heineken", "Netherlands");
+        Manufacturer saved = ManufacturerTestFactory.manufacturer(1L, "Heineken", "Netherlands");
 
         when(repository.save(any(Manufacturer.class))).thenReturn(saved);
 
@@ -46,7 +45,7 @@ class ManufacturerServiceTest {
 
     @Test
     void getById_existingId_returnsResponse() {
-        Manufacturer manufacturer = withId(2L, "Guinness", "Ireland");
+        Manufacturer manufacturer = ManufacturerTestFactory.manufacturer(2L, "Guinness", "Ireland");
         when(repository.findById(2L)).thenReturn(Optional.of(manufacturer));
 
         assertThat(service.getById(2L)).isEqualTo(new ManufacturerResponse(2L, "Guinness", "Ireland"));
@@ -63,8 +62,8 @@ class ManufacturerServiceTest {
 
     @Test
     void findAll_returnsMappedList() {
-        Manufacturer m1 = withId(1L, "Budweiser", "USA");
-        Manufacturer m2 = withId(2L, "Heineken", "Netherlands");
+        Manufacturer m1 = ManufacturerTestFactory.manufacturer(1L, "Budweiser", "USA");
+        Manufacturer m2 = ManufacturerTestFactory.manufacturer(2L, "Heineken", "Netherlands");
         when(repository.findAll()).thenReturn(List.of(m1, m2));
 
         assertThat(service.findAll()).containsExactly(
@@ -75,7 +74,7 @@ class ManufacturerServiceTest {
 
     @Test
     void update_existingId_appliesChangesAndReturnsResponse() {
-        Manufacturer existing = withId(3L, "Old Name", "Old Country");
+        Manufacturer existing = ManufacturerTestFactory.manufacturer(3L, "Old Name", "Old Country");
         when(repository.findById(3L)).thenReturn(Optional.of(existing));
         when(repository.save(existing)).thenReturn(existing);
 
@@ -112,11 +111,5 @@ class ManufacturerServiceTest {
         assertThatThrownBy(() -> service.delete(99L))
             .isInstanceOf(NotFoundException.class);
         verify(repository, never()).deleteById(any());
-    }
-
-    private static Manufacturer withId(Long id, String name, String country) {
-        var m = new Manufacturer(name, country);
-        ReflectionTestUtils.setField(m, "id", id);
-        return m;
     }
 }
