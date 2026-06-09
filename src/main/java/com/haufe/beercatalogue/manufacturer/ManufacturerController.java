@@ -4,7 +4,6 @@ import com.haufe.beercatalogue.common.dto.PageResponse;
 import com.haufe.beercatalogue.manufacturer.dto.ManufacturerRequest;
 import com.haufe.beercatalogue.manufacturer.dto.ManufacturerResponse;
 import jakarta.validation.Valid;
-import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
@@ -22,7 +21,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 @RestController
 @RequestMapping("/api/manufacturers")
-public class ManufacturerController {
+public class ManufacturerController implements ManufacturerApi {
 
     private final ManufacturerService service;
 
@@ -30,19 +29,22 @@ public class ManufacturerController {
         this.service = service;
     }
 
+    @Override
     @GetMapping
     public PageResponse<ManufacturerResponse> list(
-        @ParameterObject ManufacturerSearchCriteria criteria,
-        @ParameterObject @PageableDefault(size = 20, sort = "name") Pageable pageable
+        ManufacturerSearchCriteria criteria,
+        @PageableDefault(size = 20, sort = "name") Pageable pageable
     ) {
         return service.search(criteria, pageable);
     }
 
+    @Override
     @GetMapping("/{id}")
     public ManufacturerResponse getById(@PathVariable Long id) {
         return service.getById(id);
     }
 
+    @Override
     @PostMapping
     public ResponseEntity<ManufacturerResponse> create(@Valid @RequestBody ManufacturerRequest request) {
         var created = service.create(request);
@@ -54,6 +56,7 @@ public class ManufacturerController {
         return ResponseEntity.created(location).body(created);
     }
 
+    @Override
     @PutMapping("/{id}")
     public ManufacturerResponse update(
         @PathVariable Long id,
@@ -62,6 +65,7 @@ public class ManufacturerController {
         return service.update(id, request);
     }
 
+    @Override
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Long id) {

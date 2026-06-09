@@ -5,7 +5,6 @@ import com.haufe.beercatalogue.beer.dto.BeerResponse;
 import com.haufe.beercatalogue.common.dto.PageResponse;
 import jakarta.validation.Valid;
 import java.net.URI;
-import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
@@ -23,7 +22,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 @RestController
 @RequestMapping("/api/beers")
-public class BeerController {
+public class BeerController implements BeerApi {
 
     private final BeerService service;
 
@@ -31,19 +30,22 @@ public class BeerController {
         this.service = service;
     }
 
+    @Override
     @GetMapping
     public PageResponse<BeerResponse> list(
-        @ParameterObject BeerSearchCriteria criteria,
-        @ParameterObject @PageableDefault(size = 20, sort = "name") Pageable pageable
+        BeerSearchCriteria criteria,
+        @PageableDefault(size = 20, sort = "name") Pageable pageable
     ) {
         return service.search(criteria, pageable);
     }
 
+    @Override
     @GetMapping("/{id}")
     public BeerResponse getById(@PathVariable Long id) {
         return service.getById(id);
     }
 
+    @Override
     @PostMapping
     public ResponseEntity<BeerResponse> create(@Valid @RequestBody BeerRequest request) {
         BeerResponse created = service.create(request);
@@ -54,11 +56,13 @@ public class BeerController {
         return ResponseEntity.created(location).body(created);
     }
 
+    @Override
     @PutMapping("/{id}")
     public BeerResponse update(@PathVariable Long id, @Valid @RequestBody BeerRequest request) {
         return service.update(id, request);
     }
 
+    @Override
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Long id) {
