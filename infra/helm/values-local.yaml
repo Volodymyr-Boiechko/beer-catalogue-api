@@ -1,0 +1,27 @@
+# Local Docker Desktop development values.
+# Fully self-contained: in-cluster Postgres + locally built image.
+#
+# Quick start:
+#   docker build -t beer-catalogue-api:local .
+#   helm install beer-catalogue infra/helm/beer-catalogue -f infra/helm/values-local.yaml
+#   curl http://localhost:30080/api/beers
+#   helm uninstall beer-catalogue
+
+replicaCount: 1
+
+image:
+  repository: beer-catalogue-api
+  tag: local
+  pullPolicy: IfNotPresent   # use the locally built image; do not attempt a registry pull
+
+service:
+  type: NodePort
+  nodePort: 30080
+
+db:
+  host: postgres
+  password: localpass         # in-cluster Postgres only — not a production secret
+
+# deploys an ephemeral in-cluster Postgres pod
+postgres:
+  enabled: true

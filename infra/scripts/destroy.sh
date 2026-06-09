@@ -7,8 +7,6 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 TF_DIR="${PROJECT_ROOT}/infra/terraform"
-K8S_DIR="${PROJECT_ROOT}/infra/k8s"
-RENDERED_DIR="${K8S_DIR}/.rendered"
 
 # ─── Banner ───────────────────────────────────────────────────────────────────
 echo "======================================================================"
@@ -22,7 +20,7 @@ read -r -p ">>> Type 'yes' to confirm full teardown: " CONFIRM
 
 echo
 echo ">>> Checking prerequisites..."
-for cmd in terraform aws kubectl; do
+for cmd in terraform aws kubectl helm; do
   if ! command -v "$cmd" &>/dev/null; then
     echo "ERROR: '$cmd' is not installed or not on PATH. Aborting." >&2
     exit 1
@@ -62,14 +60,9 @@ REGION=$(terraform output -raw region 2>/dev/null || echo "")
 cd "$PROJECT_ROOT"
 
 echo
-echo ">>> [2/4] Deleting Kubernetes resources..."
-K8S_APPLY_DIR="${RENDERED_DIR}"
-if [[ ! -d "${K8S_APPLY_DIR}" ]]; then
-  echo "    .rendered/ directory not found; falling back to k8s/ source manifests."
-  K8S_APPLY_DIR="${K8S_DIR}"
-fi
-kubectl delete -f "${K8S_APPLY_DIR}/" --ignore-not-found
-echo "    Kubernetes resources deleted. AWS is now releasing the ELB..."
+echo ">>> [2/4] Uninstalling Helm release (this releases the AWS ELB)..."
+helm uninstall beer-catalogue --ignore-not-found
+echo "    Helm release uninstalled. AWS is now releasing the ELB..."
 
 if [[ -n "$LB_NAME" ]]; then
   echo
@@ -158,6 +151,5 @@ echo
 echo "  All Terraform-managed resources have been destroyed:"
 echo "    EKS cluster, worker nodes, RDS instance, VPC, NAT Gateway."
 echo
-echo "  The rendered manifests in k8s/.rendered/ can be safely deleted:"
-echo "    rm -rf ${RENDERED_DIR}"
+echo "  Helm chart remains at infra/helm/beer-catalogue/ for future deployments."
 echo "======================================================================"

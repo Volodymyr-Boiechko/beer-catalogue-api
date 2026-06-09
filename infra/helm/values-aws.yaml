@@ -1,0 +1,10 @@
+image:
+  # Placeholder — script will replace the value
+  repository: "<ACCOUNT>.dkr.ecr.<REGION>.amazonaws.com/beer-catalogue-api"
+
+service:
+  type: LoadBalancer
+
+db:
+  # Placeholder — script will replace the value
+  host: "PLACEHOLDER_RDS_HOST"

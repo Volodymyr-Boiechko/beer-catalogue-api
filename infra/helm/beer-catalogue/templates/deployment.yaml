@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "beer-catalogue.fullname" . }}
+  labels:
+    {{- include "beer-catalogue.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "beer-catalogue.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "beer-catalogue.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: {{ include "beer-catalogue.fullname" . }}-config
+            - secretRef:
+            name: {{ include "beer-catalogue.fullname" . }}-secret
+          env:
+              - name: DB_URL
+                value: "jdbc:postgresql://$(DB_HOST):$(DB_PORT)/$(DB_NAME)"
+
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 3
+
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 15
+            failureThreshold: 3

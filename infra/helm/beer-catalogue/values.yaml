@@ -1,0 +1,36 @@
+# Default values for beer-catalogue.
+
+replicaCount: 2
+
+image:
+  repository: beer-catalogue-api
+  tag: latest
+  pullPolicy: Always
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8080
+  nodePort: ""
+
+db:
+  host: "PLACEHOLDER"
+  port: "5432"
+  name: "beercatalogue"
+  user: "beeradmin"
+  password: ""
+
+springProfile: "prod"
+
+resources:
+  requests:
+    memory: "256Mi"
+    cpu: "250m"
+  limits:
+    memory: "512Mi"
+    cpu: "500m"
+
+# local only: deploy Postgres in-cluster for smoke testing
+postgres:
+  enabled: false
+  image: "postgres:16"

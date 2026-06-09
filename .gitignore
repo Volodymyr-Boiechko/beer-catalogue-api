@@ -76,6 +76,3 @@ infra/terraform/*.tfstate
 infra/terraform/*.tfstate.backup
 infra/terraform/.terraform/
 infra/terraform/.terraform.lock.hcl
-
-# Rendered k8s manifests
-k8s/.rendered/
