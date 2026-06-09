@@ -24,10 +24,11 @@ spec:
             - configMapRef:
                 name: {{ include "beer-catalogue.fullname" . }}-config
             - secretRef:
-            name: {{ include "beer-catalogue.fullname" . }}-secret
+                name: {{ include "beer-catalogue.fullname" . }}-secret
+
           env:
-              - name: DB_URL
-                value: "jdbc:postgresql://$(DB_HOST):$(DB_PORT)/$(DB_NAME)"
+            - name: DB_URL
+              value: "jdbc:postgresql://$(DB_HOST):$(DB_PORT)/$(DB_NAME)"
 
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
