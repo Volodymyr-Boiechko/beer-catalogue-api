@@ -1,5 +1,7 @@
 package com.haufe.beercatalogue.common.config;
 
+import com.haufe.beercatalogue.security.RestAccessDeniedHandler;
+import com.haufe.beercatalogue.security.RestAuthenticationEntryPoint;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -23,7 +25,9 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http,
+                                                   RestAuthenticationEntryPoint authenticationEntryPoint,
+                                                   RestAccessDeniedHandler accessDeniedHandler) throws Exception {
         http
             .csrf(AbstractHttpConfigurer::disable)
             .httpBasic(Customizer.withDefaults())
@@ -39,6 +43,10 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.PUT, "/api/beers/**").hasAnyRole("MANUFACTURER", "ADMIN")
                 .requestMatchers(HttpMethod.DELETE, "/api/beers/**").hasAnyRole("MANUFACTURER", "ADMIN")
                 .anyRequest().authenticated()
+            )
+            .exceptionHandling(ex -> ex
+                .authenticationEntryPoint(authenticationEntryPoint)
+                .accessDeniedHandler(accessDeniedHandler)
             );
         return http.build();
     }
