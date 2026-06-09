@@ -5,7 +5,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 TF_DIR="${PROJECT_ROOT}/infra/terraform"
 K8S_DIR="${PROJECT_ROOT}/infra/k8s"
 RENDERED_DIR="${K8S_DIR}/.rendered"

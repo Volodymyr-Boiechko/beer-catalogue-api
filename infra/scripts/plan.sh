@@ -2,7 +2,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-TF_DIR="$(cd "${SCRIPT_DIR}/../infra/terraform" && pwd)"
+TF_DIR="$(cd "${SCRIPT_DIR}/../terraform" && pwd)"
 
 echo "======================================================================"
 echo "  beer-catalogue-api  —  Terraform Plan (read-only preview)"
