@@ -6,10 +6,13 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
+
 import java.util.Objects;
 
 @Entity
-@Table(name = "manufacturer")
+@Table(name = "manufacturer", uniqueConstraints = @UniqueConstraint(
+        name = "uq_manufacturer_name_country", columnNames = {"name", "country"}))
 public class Manufacturer {
 
     @Id

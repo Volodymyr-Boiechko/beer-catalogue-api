@@ -1,6 +1,7 @@
 package com.haufe.beercatalogue.manufacturer;
 
 import com.haufe.beercatalogue.common.dto.PageResponse;
+import com.haufe.beercatalogue.common.exception.ConflictException;
 import com.haufe.beercatalogue.common.exception.NotFoundException;
 import com.haufe.beercatalogue.manufacturer.dto.ManufacturerRequest;
 import com.haufe.beercatalogue.manufacturer.dto.ManufacturerResponse;
@@ -23,6 +24,9 @@ public class ManufacturerService {
     }
 
     public ManufacturerResponse create(ManufacturerRequest request) {
+        if (repository.existsByNameAndCountry(request.name(), request.country())) {
+            throw new ConflictException("A manufacturer with this name and country already exists.");
+        }
         var saved = repository.save(request.toEntity());
         return ManufacturerResponse.from(saved);
     }
@@ -36,7 +40,7 @@ public class ManufacturerService {
     @Transactional(readOnly = true)
     public PageResponse<ManufacturerResponse> search(ManufacturerSearchCriteria criteria, Pageable pageable) {
         var all = repository.findAll(ManufacturerSpecification.from(criteria), pageable)
-            .map(ManufacturerResponse::from);
+                .map(ManufacturerResponse::from);
         return PageResponse.from(all);
     }
 
@@ -45,9 +49,18 @@ public class ManufacturerService {
         if (!ownershipChecker.canEditManufacturer(id)) {
             throw new AccessDeniedException("Not authorized to update this manufacturer");
         }
+        assertNoConflict(found, request);
         request.applyTo(found);
         var saved = repository.save(found);
         return ManufacturerResponse.from(saved);
+    }
+
+    private void assertNoConflict(Manufacturer found, ManufacturerRequest request) {
+        boolean keyChanged = !found.getName().equals(request.name())
+                || !found.getCountry().equals(request.country());
+        if (keyChanged && repository.existsByNameAndCountry(request.name(), request.country())) {
+            throw new ConflictException("A manufacturer with this name and country already exists.");
+        }
     }
 
     public void delete(Long id) {
@@ -59,6 +72,6 @@ public class ManufacturerService {
 
     private Manufacturer findById(Long id) {
         return repository.findById(id)
-            .orElseThrow(() -> new NotFoundException("Manufacturer not found: " + id));
+                .orElseThrow(() -> new NotFoundException("Manufacturer not found: " + id));
     }
 }

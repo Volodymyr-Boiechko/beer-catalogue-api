@@ -9,6 +9,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.haufe.beercatalogue.common.dto.PageResponse;
+import com.haufe.beercatalogue.common.exception.ConflictException;
 import com.haufe.beercatalogue.common.exception.NotFoundException;
 import com.haufe.beercatalogue.manufacturer.dto.ManufacturerRequest;
 import com.haufe.beercatalogue.manufacturer.dto.ManufacturerResponse;
@@ -110,6 +111,55 @@ class ManufacturerServiceTest {
         assertThat(existing.getCountry()).isEqualTo("New Country");
         assertThat(response.name()).isEqualTo("New Name");
         assertThat(response.country()).isEqualTo("New Country");
+    }
+
+    @Test
+    void update_unchangedKey_skipsConflictCheckAndAlwaysSaves() {
+        Manufacturer existing = ManufacturerTestFactory.manufacturer(3L, "Heineken", "Netherlands");
+        when(repository.findById(3L)).thenReturn(Optional.of(existing));
+        when(repository.save(existing)).thenReturn(existing);
+
+        ManufacturerResponse response = service.update(3L, new ManufacturerRequest("Heineken", "Netherlands"));
+
+        assertThat(response).isEqualTo(new ManufacturerResponse(3L, "Heineken", "Netherlands"));
+        verify(repository, never()).existsByNameAndCountry(any(), any());
+        verify(repository).save(existing);
+    }
+
+    @Test
+    void update_changingKeyToExistingValue_throwsConflictExceptionAndNeverSaves() {
+        Manufacturer existing = ManufacturerTestFactory.manufacturer(3L, "Heineken", "Netherlands");
+        when(repository.findById(3L)).thenReturn(Optional.of(existing));
+        when(repository.existsByNameAndCountry("Guinness", "Ireland")).thenReturn(true);
+
+        assertThatThrownBy(() -> service.update(3L, new ManufacturerRequest("Guinness", "Ireland")))
+            .isInstanceOf(ConflictException.class)
+            .hasMessageContaining("already exists");
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    void update_changingKeyToFreeValue_savesAndReturnsUpdatedResponse() {
+        Manufacturer existing = ManufacturerTestFactory.manufacturer(3L, "Old Name", "Old Country");
+        when(repository.findById(3L)).thenReturn(Optional.of(existing));
+        when(repository.existsByNameAndCountry("New Name", "New Country")).thenReturn(false);
+        when(repository.save(existing)).thenReturn(existing);
+
+        ManufacturerResponse response = service.update(3L, new ManufacturerRequest("New Name", "New Country"));
+
+        assertThat(response.name()).isEqualTo("New Name");
+        assertThat(response.country()).isEqualTo("New Country");
+        verify(repository).save(existing);
+    }
+
+    @Test
+    void create_duplicate_throwsConflictExceptionAndNeverSaves() {
+        when(repository.existsByNameAndCountry("Heineken", "Netherlands")).thenReturn(true);
+
+        assertThatThrownBy(() -> service.create(new ManufacturerRequest("Heineken", "Netherlands")))
+            .isInstanceOf(ConflictException.class)
+            .hasMessageContaining("already exists");
+        verify(repository, never()).save(any());
     }
 
     @Test

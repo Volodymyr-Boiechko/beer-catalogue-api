@@ -226,6 +226,43 @@ class ManufacturerControllerTest {
     }
 
     @Test
+    void create_duplicateNameAndCountry_returns409WithApiError() throws Exception {
+        ManufacturerRequest request = new ManufacturerRequest("Heineken", "Netherlands");
+
+        mockMvc.perform(post("/api/manufacturers")
+                .with(httpBasic("admin", "pass"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isCreated());
+
+        mockMvc.perform(post("/api/manufacturers")
+                .with(httpBasic("admin", "pass"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isConflict())
+            .andExpect(jsonPath("$.status").value(HttpStatus.CONFLICT.value()))
+            .andExpect(jsonPath("$.message").value("A manufacturer with this name and country already exists."))
+            .andExpect(jsonPath("$.timestamp").exists())
+            .andExpect(jsonPath("$.fieldErrors").doesNotExist());
+    }
+
+    @Test
+    void update_toExistingNameAndCountry_returns409WithApiError() throws Exception {
+        Manufacturer first = repository.save(new Manufacturer("Heineken", "Netherlands"));
+        repository.save(new Manufacturer("Guinness", "Ireland"));
+
+        mockMvc.perform(put("/api/manufacturers/{id}", first.getId())
+                .with(httpBasic("admin", "pass"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(new ManufacturerRequest("Guinness", "Ireland"))))
+            .andExpect(status().isConflict())
+            .andExpect(jsonPath("$.status").value(HttpStatus.CONFLICT.value()))
+            .andExpect(jsonPath("$.message").value("A manufacturer with this name and country already exists."))
+            .andExpect(jsonPath("$.timestamp").exists())
+            .andExpect(jsonPath("$.fieldErrors").doesNotExist());
+    }
+
+    @Test
     void create_blankName_returns400WithFieldError() throws Exception {
         mockMvc.perform(post("/api/manufacturers")
                 .with(httpBasic("admin", "pass"))
