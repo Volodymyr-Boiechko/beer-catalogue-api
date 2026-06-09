@@ -10,6 +10,6 @@ CREATE TABLE app_user
     manufacturer_id BIGINT,
 
     CONSTRAINT uq_app_user_username UNIQUE (username),
-    CONSTRAINT fk_app_user_manufacturer FOREIGN KEY (manufacturer_id) REFERENCES manufacturer (id)
+    CONSTRAINT fk_app_user_manufacturer FOREIGN KEY (manufacturer_id) REFERENCES manufacturer (id) ON DELETE SET NULL
 );
 CREATE INDEX idx_app_user_manufacturer_id ON app_user (manufacturer_id);

@@ -10,7 +10,7 @@ CREATE TABLE beer
     description     TEXT,
     manufacturer_id BIGINT        NOT NULL,
 
-    CONSTRAINT fk_beer_manufacturer FOREIGN KEY (manufacturer_id) REFERENCES manufacturer (id)
+    CONSTRAINT fk_beer_manufacturer FOREIGN KEY (manufacturer_id) REFERENCES manufacturer (id) ON DELETE CASCADE
 );
 
 CREATE INDEX idx_beer_manufacturer_id ON beer (manufacturer_id);
