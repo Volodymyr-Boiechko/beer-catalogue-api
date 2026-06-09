@@ -44,6 +44,8 @@ public interface BeerApi {
         @ApiResponse(responseCode = "401", description = "Authentication required",
             content = @Content(schema = @Schema(implementation = ApiError.class))),
         @ApiResponse(responseCode = "403", description = "Insufficient permissions or not the owner of the manufacturer",
+            content = @Content(schema = @Schema(implementation = ApiError.class))),
+        @ApiResponse(responseCode = "404", description = "Manufacturer not found",
             content = @Content(schema = @Schema(implementation = ApiError.class)))
     })
     @SecurityRequirement(name = "basicAuth")
@@ -58,7 +60,7 @@ public interface BeerApi {
             content = @Content(schema = @Schema(implementation = ApiError.class))),
         @ApiResponse(responseCode = "403", description = "Insufficient permissions",
             content = @Content(schema = @Schema(implementation = ApiError.class))),
-        @ApiResponse(responseCode = "404", description = "Beer not found",
+        @ApiResponse(responseCode = "404", description = "Beer not found, or manufacturer not found",
             content = @Content(schema = @Schema(implementation = ApiError.class)))
     })
     @SecurityRequirement(name = "basicAuth")

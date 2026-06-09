@@ -44,6 +44,8 @@ public interface ManufacturerApi {
         @ApiResponse(responseCode = "401", description = "Authentication required",
             content = @Content(schema = @Schema(implementation = ApiError.class))),
         @ApiResponse(responseCode = "403", description = "Insufficient permissions",
+            content = @Content(schema = @Schema(implementation = ApiError.class))),
+        @ApiResponse(responseCode = "409", description = "A manufacturer with this name and country already exists",
             content = @Content(schema = @Schema(implementation = ApiError.class)))
     })
     @SecurityRequirement(name = "basicAuth")
@@ -59,6 +61,8 @@ public interface ManufacturerApi {
         @ApiResponse(responseCode = "403", description = "Insufficient permissions",
             content = @Content(schema = @Schema(implementation = ApiError.class))),
         @ApiResponse(responseCode = "404", description = "Manufacturer not found",
+            content = @Content(schema = @Schema(implementation = ApiError.class))),
+        @ApiResponse(responseCode = "409", description = "A manufacturer with this name and country already exists",
             content = @Content(schema = @Schema(implementation = ApiError.class)))
     })
     @SecurityRequirement(name = "basicAuth")
