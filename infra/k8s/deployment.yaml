@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: beer-catalogue
+  namespace: default
+  labels:
+    app: beer-catalogue
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: beer-catalogue
+  template:
+    metadata:
+      labels:
+        app: beer-catalogue
+    spec:
+      containers:
+        - name: beer-catalogue-api
+          image: "<your-registry>/beer-catalogue-api:latest"
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: beer-catalogue-config
+            - secretRef:
+                name: beer-catalogue-secret
+
+          env:
+            - name: DB_URL
+              value: "jdbc:postgresql://$(DB_HOST):$(DB_PORT)/$(DB_NAME)"
+
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 3
+
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 15
+            failureThreshold: 3
