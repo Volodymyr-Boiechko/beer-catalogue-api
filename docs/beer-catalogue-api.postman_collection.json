@@ -1,0 +1,746 @@
+{
+  "info": {
+    "_postman_id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+    "name": "Beer Catalogue API",
+    "description": "Run folders in order: **Setup** → 1–7 → **Cleanup**.\n\nDemo users seeded at startup:\n- `admin` / `admin` — ADMIN (full access)\n- `heineken` / `pass` — MANUFACTURER (owns Heineken)\n- `guinness` / `pass` — MANUFACTURER (owns Guinness)\n\n`createdManufacturerId` and `createdBeerId` are populated by the Setup folder's test scripts.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl",             "value": "http://localhost:8080", "type": "string" },
+    { "key": "adminUser",           "value": "admin",                 "type": "string" },
+    { "key": "adminPass",           "value": "admin",                 "type": "string" },
+    { "key": "heinekenUser",        "value": "heineken",              "type": "string" },
+    { "key": "heinekenPass",        "value": "pass",                  "type": "string" },
+    { "key": "guinnessUser",        "value": "guinness",              "type": "string" },
+    { "key": "guinnessPass",        "value": "pass",                  "type": "string" },
+    { "key": "createdManufacturerId", "value": "",                    "type": "string" },
+    { "key": "createdBeerId",       "value": "",                      "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Setup — Seed Test Data",
+      "description": "Run this folder first. Creates Brewdog and Sierra Nevada manufacturers plus two beers, and stores the created IDs in collection variables.",
+      "item": [
+        {
+          "name": "Create Manufacturer Brewdog/Scotland (→ createdManufacturerId)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                  "pm.test('Response has numeric id', () => {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.id).to.be.a('number');",
+                  "    pm.collectionVariables.set('createdManufacturerId', json.id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                { "key": "username", "value": "{{adminUser}}", "type": "string" },
+                { "key": "password", "value": "{{adminPass}}", "type": "string" }
+              ]
+            },
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Brewdog\",\n  \"country\": \"Scotland\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/manufacturers",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "api", "manufacturers" ]
+            }
+          }
+        },
+        {
+          "name": "Create Manufacturer Sierra Nevada/USA",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                  "pm.test('Response has numeric id', () => {",
+                  "    pm.expect(pm.response.json().id).to.be.a('number');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                { "key": "username", "value": "{{adminUser}}", "type": "string" },
+                { "key": "password", "value": "{{adminPass}}", "type": "string" }
+              ]
+            },
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Sierra Nevada\",\n  \"country\": \"USA\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/manufacturers",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "api", "manufacturers" ]
+            }
+          }
+        },
+        {
+          "name": "Create Beer Punk IPA (→ createdBeerId)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                  "pm.test('Response has numeric id', () => {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.id).to.be.a('number');",
+                  "    pm.collectionVariables.set('createdBeerId', json.id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                { "key": "username", "value": "{{adminUser}}", "type": "string" },
+                { "key": "password", "value": "{{adminPass}}", "type": "string" }
+              ]
+            },
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Punk IPA\",\n  \"abv\": 5.6,\n  \"type\": \"IPA\",\n  \"description\": \"Fruity and aggressively hopped post-modern classic\",\n  \"manufacturerId\": {{createdManufacturerId}}\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/beers",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "api", "beers" ]
+            }
+          }
+        },
+        {
+          "name": "Create Beer Pale Ale",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                  "pm.test('Response has numeric id', () => {",
+                  "    pm.expect(pm.response.json().id).to.be.a('number');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                { "key": "username", "value": "{{adminUser}}", "type": "string" },
+                { "key": "password", "value": "{{adminPass}}", "type": "string" }
+              ]
+            },
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Pale Ale\",\n  \"abv\": 5.6,\n  \"type\": \"ALE\",\n  \"description\": \"Light and refreshing American pale ale\",\n  \"manufacturerId\": {{createdManufacturerId}}\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/beers",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "api", "beers" ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "1 — Public Reads",
+      "description": "All GET endpoints are open to anonymous requests.",
+      "item": [
+        {
+          "name": "GET list manufacturers",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [ "pm.test('Status is 200', () => pm.response.to.have.status(200));" ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/manufacturers",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "api", "manufacturers" ]
+            }
+          }
+        },
+        {
+          "name": "GET manufacturer by id",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [ "pm.test('Status is 200', () => pm.response.to.have.status(200));" ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/manufacturers/{{createdManufacturerId}}",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "api", "manufacturers", "{{createdManufacturerId}}" ]
+            }
+          }
+        },
+        {
+          "name": "GET list beers",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [ "pm.test('Status is 200', () => pm.response.to.have.status(200));" ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/beers",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "api", "beers" ]
+            }
+          }
+        },
+        {
+          "name": "GET beer by id",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [ "pm.test('Status is 200', () => pm.response.to.have.status(200));" ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/beers/{{createdBeerId}}",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "api", "beers", "{{createdBeerId}}" ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2 — Search & Pagination",
+      "description": "Filter and paginate results. All read-only, no auth required.",
+      "item": [
+        {
+          "name": "GET beers?type=IPA",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [ "pm.test('Status is 200', () => pm.response.to.have.status(200));" ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/beers?type=IPA",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "api", "beers" ],
+              "query": [ { "key": "type", "value": "IPA" } ]
+            }
+          }
+        },
+        {
+          "name": "GET beers?minAbv=5&maxAbv=8",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [ "pm.test('Status is 200', () => pm.response.to.have.status(200));" ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/beers?minAbv=5&maxAbv=8",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "api", "beers" ],
+              "query": [
+                { "key": "minAbv", "value": "5" },
+                { "key": "maxAbv", "value": "8" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET manufacturers?country=USA",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [ "pm.test('Status is 200', () => pm.response.to.have.status(200));" ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/manufacturers?country=USA",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "api", "manufacturers" ],
+              "query": [ { "key": "country", "value": "USA" } ]
+            }
+          }
+        },
+        {
+          "name": "GET beers?page=0&size=2&sort=name,asc",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Page contains at most 2 items', () => {",
+                  "    pm.expect(pm.response.json().content.length).to.be.at.most(2);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/beers?page=0&size=2&sort=name,asc",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "api", "beers" ],
+              "query": [
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "2" },
+                { "key": "sort", "value": "name,asc" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3 — Create (Auth)",
+      "description": "Authenticated write operations that should succeed.",
+      "item": [
+        {
+          "name": "POST manufacturer as admin → 201",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                  "pm.test('Response has numeric id', () => {",
+                  "    pm.expect(pm.response.json().id).to.be.a('number');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                { "key": "username", "value": "{{adminUser}}", "type": "string" },
+                { "key": "password", "value": "{{adminPass}}", "type": "string" }
+              ]
+            },
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Lagunitas\",\n  \"country\": \"USA\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/manufacturers",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "api", "manufacturers" ]
+            }
+          }
+        },
+        {
+          "name": "POST beer as admin → 201",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                  "pm.test('Response has numeric id', () => {",
+                  "    pm.expect(pm.response.json().id).to.be.a('number');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                { "key": "username", "value": "{{adminUser}}", "type": "string" },
+                { "key": "password", "value": "{{adminPass}}", "type": "string" }
+              ]
+            },
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Torpedo Extra IPA\",\n  \"abv\": 7.2,\n  \"type\": \"IPA\",\n  \"description\": \"Bold and citrusy West Coast IPA\",\n  \"manufacturerId\": {{createdManufacturerId}}\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/beers",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "api", "beers" ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4 — Conflict (409)",
+      "description": "Posting a manufacturer whose (name, country) pair already exists must return 409 with a specific message.",
+      "item": [
+        {
+          "name": "POST Brewdog/Scotland again → 409",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 409', () => pm.response.to.have.status(409));",
+                  "pm.test('Message contains already exists', () => {",
+                  "    pm.expect(pm.response.json().message).to.include('already exists');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                { "key": "username", "value": "{{adminUser}}", "type": "string" },
+                { "key": "password", "value": "{{adminPass}}", "type": "string" }
+              ]
+            },
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Brewdog\",\n  \"country\": \"Scotland\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/manufacturers",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "api", "manufacturers" ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5 — Validation (400)",
+      "description": "Invalid request bodies must return 400 with a fieldErrors map.",
+      "item": [
+        {
+          "name": "POST manufacturer blank name → 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 400', () => pm.response.to.have.status(400));",
+                  "pm.test('fieldErrors exists', () => {",
+                  "    pm.expect(pm.response.json().fieldErrors).to.exist;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                { "key": "username", "value": "{{adminUser}}", "type": "string" },
+                { "key": "password", "value": "{{adminPass}}", "type": "string" }
+              ]
+            },
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"\",\n  \"country\": \"Germany\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/manufacturers",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "api", "manufacturers" ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "6 — Auth Failures",
+      "description": "Write attempts that must be rejected: no credentials (401), wrong role (403), not the owner (403).",
+      "item": [
+        {
+          "name": "POST manufacturer no auth → 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [ "pm.test('Status is 401', () => pm.response.to.have.status(401));" ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Ghost Brewery\",\n  \"country\": \"Nowhere\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/manufacturers",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "api", "manufacturers" ]
+            }
+          }
+        },
+        {
+          "name": "POST manufacturer as heineken (MANUFACTURER role) → 403",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [ "pm.test('Status is 403', () => pm.response.to.have.status(403));" ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                { "key": "username", "value": "{{heinekenUser}}", "type": "string" },
+                { "key": "password", "value": "{{heinekenPass}}", "type": "string" }
+              ]
+            },
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Forbidden Brewery\",\n  \"country\": \"Germany\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/manufacturers",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "api", "manufacturers" ]
+            }
+          }
+        },
+        {
+          "name": "PUT Brewdog as guinness (not owner) → 403",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [ "pm.test('Status is 403', () => pm.response.to.have.status(403));" ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                { "key": "username", "value": "{{guinnessUser}}", "type": "string" },
+                { "key": "password", "value": "{{guinnessPass}}", "type": "string" }
+              ]
+            },
+            "method": "PUT",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Hijacked\",\n  \"country\": \"Scotland\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/manufacturers/{{createdManufacturerId}}",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "api", "manufacturers", "{{createdManufacturerId}}" ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "7 — Not Found (404)",
+      "description": "Requests for IDs that do not exist must return 404.",
+      "item": [
+        {
+          "name": "GET /api/manufacturers/999999 → 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [ "pm.test('Status is 404', () => pm.response.to.have.status(404));" ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/manufacturers/999999",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "api", "manufacturers", "999999" ]
+            }
+          }
+        },
+        {
+          "name": "GET /api/beers/999999 → 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [ "pm.test('Status is 404', () => pm.response.to.have.status(404));" ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/beers/999999",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "api", "beers", "999999" ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cleanup",
+      "description": "Delete the resources created by the Setup folder. Deleting the manufacturer cascades to all its beers.",
+      "item": [
+        {
+          "name": "DELETE beer {{createdBeerId}} → 204",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [ "pm.test('Status is 204', () => pm.response.to.have.status(204));" ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                { "key": "username", "value": "{{adminUser}}", "type": "string" },
+                { "key": "password", "value": "{{adminPass}}", "type": "string" }
+              ]
+            },
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/api/beers/{{createdBeerId}}",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "api", "beers", "{{createdBeerId}}" ]
+            }
+          }
+        },
+        {
+          "name": "DELETE manufacturer {{createdManufacturerId}} → 204 (cascades remaining beers)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [ "pm.test('Status is 204', () => pm.response.to.have.status(204));" ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                { "key": "username", "value": "{{adminUser}}", "type": "string" },
+                { "key": "password", "value": "{{adminPass}}", "type": "string" }
+              ]
+            },
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/api/manufacturers/{{createdManufacturerId}}",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "api", "manufacturers", "{{createdManufacturerId}}" ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
