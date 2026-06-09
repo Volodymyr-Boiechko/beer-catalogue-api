@@ -5,6 +5,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -22,6 +23,7 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase.Replace;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
@@ -85,7 +87,11 @@ class BeerSecurityTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(
                     new BeerRequest("X", new BigDecimal("5.0"), BeerType.LAGER, null, m1.getId()))))
-            .andExpect(status().isUnauthorized());
+            .andExpect(status().isUnauthorized())
+            .andExpect(jsonPath("$.status").value(HttpStatus.UNAUTHORIZED.value()))
+            .andExpect(jsonPath("$.message").exists())
+            .andExpect(jsonPath("$.timestamp").exists())
+            .andExpect(jsonPath("$.fieldErrors").doesNotExist());
     }
 
     @Test
@@ -94,13 +100,21 @@ class BeerSecurityTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(
                     new BeerRequest("X", new BigDecimal("5.0"), BeerType.LAGER, null, m1.getId()))))
-            .andExpect(status().isUnauthorized());
+            .andExpect(status().isUnauthorized())
+            .andExpect(jsonPath("$.status").value(HttpStatus.UNAUTHORIZED.value()))
+            .andExpect(jsonPath("$.message").exists())
+            .andExpect(jsonPath("$.timestamp").exists())
+            .andExpect(jsonPath("$.fieldErrors").doesNotExist());
     }
 
     @Test
     void anonymous_DELETE_returns401() throws Exception {
         mockMvc.perform(delete("/api/beers/{id}", beer1.getId()))
-            .andExpect(status().isUnauthorized());
+            .andExpect(status().isUnauthorized())
+            .andExpect(jsonPath("$.status").value(HttpStatus.UNAUTHORIZED.value()))
+            .andExpect(jsonPath("$.message").exists())
+            .andExpect(jsonPath("$.timestamp").exists())
+            .andExpect(jsonPath("$.fieldErrors").doesNotExist());
     }
 
     @Test
@@ -120,7 +134,10 @@ class BeerSecurityTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(
                     new BeerRequest("Stout", new BigDecimal("4.5"), BeerType.STOUT, null, m2.getId()))))
-            .andExpect(status().isForbidden());
+            .andExpect(status().isForbidden())
+            .andExpect(jsonPath("$.status").value(HttpStatus.FORBIDDEN.value()))
+            .andExpect(jsonPath("$.message").exists())
+            .andExpect(jsonPath("$.fieldErrors").doesNotExist());
     }
 
     @Test
@@ -140,7 +157,10 @@ class BeerSecurityTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(
                     new BeerRequest("Hijacked", new BigDecimal("5.0"), BeerType.LAGER, null, m1.getId()))))
-            .andExpect(status().isForbidden());
+            .andExpect(status().isForbidden())
+            .andExpect(jsonPath("$.status").value(HttpStatus.FORBIDDEN.value()))
+            .andExpect(jsonPath("$.message").exists())
+            .andExpect(jsonPath("$.fieldErrors").doesNotExist());
     }
 
     @Test
@@ -154,7 +174,10 @@ class BeerSecurityTest {
     void ownerB_delete_ownerA_beer_returns403() throws Exception {
         mockMvc.perform(delete("/api/beers/{id}", beer1.getId())
                 .with(httpBasic("ownerB", "pass")))
-            .andExpect(status().isForbidden());
+            .andExpect(status().isForbidden())
+            .andExpect(jsonPath("$.status").value(HttpStatus.FORBIDDEN.value()))
+            .andExpect(jsonPath("$.message").exists())
+            .andExpect(jsonPath("$.fieldErrors").doesNotExist());
     }
 
     @Test

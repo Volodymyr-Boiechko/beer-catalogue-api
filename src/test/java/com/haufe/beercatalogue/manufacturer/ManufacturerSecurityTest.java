@@ -1,18 +1,23 @@
 package com.haufe.beercatalogue.manufacturer;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.haufe.beercatalogue.beer.Beer;
 import com.haufe.beercatalogue.beer.BeerRepository;
+import com.haufe.beercatalogue.beer.BeerType;
 import com.haufe.beercatalogue.manufacturer.dto.ManufacturerRequest;
 import com.haufe.beercatalogue.security.AppUser;
 import com.haufe.beercatalogue.security.AppUserRepository;
 import com.haufe.beercatalogue.security.UserRole;
+import java.math.BigDecimal;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +25,7 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase.Replace;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
@@ -81,7 +87,11 @@ class ManufacturerSecurityTest {
         mockMvc.perform(post("/api/manufacturers")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(new ManufacturerRequest("New", "Country"))))
-            .andExpect(status().isUnauthorized());
+            .andExpect(status().isUnauthorized())
+            .andExpect(jsonPath("$.status").value(HttpStatus.UNAUTHORIZED.value()))
+            .andExpect(jsonPath("$.message").exists())
+            .andExpect(jsonPath("$.timestamp").exists())
+            .andExpect(jsonPath("$.fieldErrors").doesNotExist());
     }
 
     @Test
@@ -89,13 +99,21 @@ class ManufacturerSecurityTest {
         mockMvc.perform(put("/api/manufacturers/{id}", m1.getId())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(new ManufacturerRequest("Updated", "Country"))))
-            .andExpect(status().isUnauthorized());
+            .andExpect(status().isUnauthorized())
+            .andExpect(jsonPath("$.status").value(HttpStatus.UNAUTHORIZED.value()))
+            .andExpect(jsonPath("$.message").exists())
+            .andExpect(jsonPath("$.timestamp").exists())
+            .andExpect(jsonPath("$.fieldErrors").doesNotExist());
     }
 
     @Test
     void anonymous_DELETE_returns401() throws Exception {
         mockMvc.perform(delete("/api/manufacturers/{id}", m1.getId()))
-            .andExpect(status().isUnauthorized());
+            .andExpect(status().isUnauthorized())
+            .andExpect(jsonPath("$.status").value(HttpStatus.UNAUTHORIZED.value()))
+            .andExpect(jsonPath("$.message").exists())
+            .andExpect(jsonPath("$.timestamp").exists())
+            .andExpect(jsonPath("$.fieldErrors").doesNotExist());
     }
 
     @Test
@@ -104,7 +122,10 @@ class ManufacturerSecurityTest {
                 .with(httpBasic("ownerA", "pass"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(new ManufacturerRequest("New", "Country"))))
-            .andExpect(status().isForbidden());
+            .andExpect(status().isForbidden())
+            .andExpect(jsonPath("$.status").value(HttpStatus.FORBIDDEN.value()))
+            .andExpect(jsonPath("$.message").exists())
+            .andExpect(jsonPath("$.fieldErrors").doesNotExist());
     }
 
     @Test
@@ -122,14 +143,20 @@ class ManufacturerSecurityTest {
                 .with(httpBasic("ownerB", "pass"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(new ManufacturerRequest("Hijacked", "Germany"))))
-            .andExpect(status().isForbidden());
+            .andExpect(status().isForbidden())
+            .andExpect(jsonPath("$.status").value(HttpStatus.FORBIDDEN.value()))
+            .andExpect(jsonPath("$.message").exists())
+            .andExpect(jsonPath("$.fieldErrors").doesNotExist());
     }
 
     @Test
     void manufacturer_role_DELETE_returns403() throws Exception {
         mockMvc.perform(delete("/api/manufacturers/{id}", m1.getId())
                 .with(httpBasic("ownerA", "pass")))
-            .andExpect(status().isForbidden());
+            .andExpect(status().isForbidden())
+            .andExpect(jsonPath("$.status").value(HttpStatus.FORBIDDEN.value()))
+            .andExpect(jsonPath("$.message").exists())
+            .andExpect(jsonPath("$.fieldErrors").doesNotExist());
     }
 
     @Test
@@ -155,5 +182,20 @@ class ManufacturerSecurityTest {
         mockMvc.perform(delete("/api/manufacturers/{id}", m3.getId())
                 .with(httpBasic("admin", "pass")))
             .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void admin_DELETE_manufacturer_with_dependents_returns204_and_cascades() throws Exception {
+        Beer beer = beerRepository.save(
+            new Beer("Cascade Lager", new BigDecimal("5.0"), BeerType.LAGER, null, m1));
+        Long beerId = beer.getId();
+
+        mockMvc.perform(delete("/api/manufacturers/{id}", m1.getId())
+                .with(httpBasic("admin", "pass")))
+            .andExpect(status().isNoContent());
+
+        assertThat(beerRepository.findById(beerId)).isEmpty();
+        AppUser reloadedOwner = appUserRepository.findByUsername("ownerA").orElseThrow();
+        assertThat(reloadedOwner.getManufacturerId()).isNull();
     }
 }

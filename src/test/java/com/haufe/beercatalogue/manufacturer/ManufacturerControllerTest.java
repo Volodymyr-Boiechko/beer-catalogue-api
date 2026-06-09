@@ -23,6 +23,7 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase.Replace;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
@@ -174,7 +175,10 @@ class ManufacturerControllerTest {
     @Test
     void getById_nonExistentId_returns404() throws Exception {
         mockMvc.perform(get("/api/manufacturers/{id}", 999L))
-            .andExpect(status().isNotFound());
+            .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.status").value(HttpStatus.NOT_FOUND.value()))
+            .andExpect(jsonPath("$.message").exists())
+            .andExpect(jsonPath("$.fieldErrors").doesNotExist());
     }
 
     @Test
@@ -196,7 +200,10 @@ class ManufacturerControllerTest {
                 .with(httpBasic("admin", "pass"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(new ManufacturerRequest("Name", "Country"))))
-            .andExpect(status().isNotFound());
+            .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.status").value(HttpStatus.NOT_FOUND.value()))
+            .andExpect(jsonPath("$.message").exists())
+            .andExpect(jsonPath("$.fieldErrors").doesNotExist());
     }
 
     @Test
@@ -212,7 +219,10 @@ class ManufacturerControllerTest {
     void delete_nonExistentId_returns404() throws Exception {
         mockMvc.perform(delete("/api/manufacturers/{id}", 999L)
                 .with(httpBasic("admin", "pass")))
-            .andExpect(status().isNotFound());
+            .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.status").value(HttpStatus.NOT_FOUND.value()))
+            .andExpect(jsonPath("$.message").exists())
+            .andExpect(jsonPath("$.fieldErrors").doesNotExist());
     }
 
     @Test
@@ -222,6 +232,8 @@ class ManufacturerControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(new ManufacturerRequest("", "Netherlands"))))
             .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()))
+            .andExpect(jsonPath("$.fieldErrors").exists())
             .andExpect(jsonPath("$.fieldErrors.name").exists());
     }
 }
