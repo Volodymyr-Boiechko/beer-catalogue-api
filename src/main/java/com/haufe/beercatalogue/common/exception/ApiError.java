@@ -1,10 +1,12 @@
 package com.haufe.beercatalogue.common.exception;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
 import java.util.Map;
 
 @Schema(description = "Error response body returned for all API error conditions")
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public record ApiError(
     @Schema(description = "HTTP status code") int status,
     @Schema(description = "Human-readable error message") String message,
