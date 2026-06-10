@@ -49,7 +49,7 @@ ELB_HOSTNAME=$(kubectl get svc beer-catalogue \
 
 if [[ -n "$ELB_HOSTNAME" ]]; then
   echo "    ELB hostname: ${ELB_HOSTNAME}"
-  LB_NAME="${ELB_HOSTNAME%%.*}"   # abc123 from abc123.eu-west-1.elb.amazonaws.com
+  LB_NAME="${ELB_HOSTNAME%%.*}"   # abc123 from abc123.eu-central-1.elb.amazonaws.com
 else
   echo "    Service 'beer-catalogue' not found or has no ELB assigned; ELB wait will be skipped."
   LB_NAME=""

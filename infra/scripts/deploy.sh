@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Full deployment: Terraform (EKS + RDS) → ECR image push → kubectl apply.
+# Full deployment: Terraform (EKS + RDS) → EKS access entry → ECR image push → Helm install.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -45,7 +45,7 @@ terraform init -input=false
 terraform validate
 terraform apply -auto-approve -var="db_password=${DB_PASSWORD}"
 
-echo ">>> [1/6] Capturing Terraform outputs..."
+echo ">>> Capturing Terraform outputs..."
 REGION=$(terraform output -raw region)
 CLUSTER_NAME=$(terraform output -raw cluster_name)
 RDS_ENDPOINT=$(terraform output -raw rds_endpoint)
@@ -59,7 +59,27 @@ cd "$PROJECT_ROOT"
 aws eks update-kubeconfig --region "$REGION" --name "$CLUSTER_NAME"
 
 echo
-echo ">>> [3/6] Building and pushing Docker image to ECR..."
+# Requires AWS CLI 2.15+ (EKS Access Entry API support).
+echo ">>> [3/6] Granting cluster access (EKS Access Entry)..."
+PRINCIPAL_ARN=$(aws sts get-caller-identity --query Arn --output text)
+echo "    principal: ${PRINCIPAL_ARN}"
+aws eks create-access-entry --cluster-name "$CLUSTER_NAME" --region "$REGION" \
+  --principal-arn "$PRINCIPAL_ARN" 2>/dev/null || true
+aws eks associate-access-policy --cluster-name "$CLUSTER_NAME" --region "$REGION" \
+  --principal-arn "$PRINCIPAL_ARN" \
+  --policy-arn arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy \
+  --access-scope type=cluster 2>/dev/null || true
+aws eks update-kubeconfig --region "$REGION" --name "$CLUSTER_NAME"
+echo "    Verifying node access (up to 6 attempts)..."
+for i in $(seq 1 6); do
+  kubectl get nodes && break
+  [[ $i -eq 6 ]] && { echo "ERROR: kubectl get nodes failed after 6 attempts." >&2; exit 1; }
+  echo "    ...attempt ${i}/6 failed, retrying in 5s"
+  sleep 5
+done
+
+echo
+echo ">>> [4/6] Building and pushing Docker image to ECR..."
 ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 ECR_REPO="beer-catalogue-api"
 IMAGE_URI="${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com/${ECR_REPO}:latest"
@@ -78,7 +98,7 @@ docker build --platform linux/amd64 -t "${IMAGE_URI}" "${PROJECT_ROOT}"
 docker push "${IMAGE_URI}"
 
 echo
-echo ">>> [4/5] Deploying with Helm (--wait blocks until all pods are ready)..."
+echo ">>> [5/6] Deploying with Helm (--wait blocks until all pods are ready)..."
 # Credentials and runtime values are passed via --set and never committed.
 # IMAGE_URI = <repo>:<tag>; shell parameter expansion splits at the last colon.
 helm upgrade --install beer-catalogue "${HELM_DIR}/beer-catalogue" \
@@ -91,7 +111,7 @@ helm upgrade --install beer-catalogue "${HELM_DIR}/beer-catalogue" \
   --wait --timeout 5m
 
 echo
-echo ">>> [5/5] Waiting for LoadBalancer hostname (up to 2 min)..."
+echo ">>> [6/6] Waiting for LoadBalancer hostname (up to 2 min)..."
 ELB_HOSTNAME=""
 for i in $(seq 1 12); do
   ELB_HOSTNAME=$(kubectl get svc beer-catalogue \
