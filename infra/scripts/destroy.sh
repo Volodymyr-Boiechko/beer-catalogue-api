@@ -119,6 +119,7 @@ fi
 echo
 echo ">>> [4/4] Running terraform destroy (15–20 min)..."
 cd "$TF_DIR"
+terraform init -input=false
 terraform destroy -auto-approve -var="db_password=${DB_PASSWORD}"
 cd "$PROJECT_ROOT"
 
@@ -126,7 +127,7 @@ echo
 echo ">>> Optional: delete ECR repository 'beer-catalogue-api'?"
 echo "    WARNING: this permanently deletes all Docker images stored in ECR."
 read -r -p "    Delete ECR repository? [y/N]: " DELETE_ECR
-if [[ "${DELETE_ECR,,}" == "y" || "${DELETE_ECR,,}" == "yes" ]]; then
+if [[ "$DELETE_ECR" == "y" || "$DELETE_ECR" == "Y" || "$DELETE_ECR" == "yes" || "$DELETE_ECR" == "YES" ]]; then
   if [[ -n "$REGION" ]]; then
     echo "    Deleting ECR repository and all images..."
     aws ecr delete-repository \
